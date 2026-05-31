@@ -1,6 +1,6 @@
 # 🦷 Dentist
 
-A high-fidelity, interactive 3D dental surgical simulation experience built entirely within a single HTML file using **Three.js**. This simulator provides a procedure-based learning environment for dental professionals to practice surgical techniques like extractions, implants, and root canals in a controlled, risk-free virtual space.
+A high-fidelity, interactive 3D dental surgical simulation experience built entirely within a single dashboard. This simulator provides a procedure-based learning environment for dental professionals to practice surgical techniques like extractions, implants, and root canals in a controlled, risk-free virtual space.
 
 ![screenshot](https://raw.githubusercontent.com/mochiyaki/dentist/master/demo.gif)
 
