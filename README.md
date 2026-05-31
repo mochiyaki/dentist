@@ -86,7 +86,7 @@ Successful completion of a surgical mission follows a precise loop:
 -   **Styling**: CSS3 (Modern Flexbox/Grid, CSS Variables)
 -   **Deployment**: Single-file HTML (Zero dependencies required beyond CDN)
 
-## 🦷 MCP (please refer to the content inside the folder)
+## 🤖 MCP (please refer to the content inside the folder)
 - **📚 Medical Literature**:
   - `search-medical-literature`: Query PubMed for research articles.
   - `get-article-details`: Retrieve detailed abstracts and metadata via PMID.
