@@ -1,0 +1,1465 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dentist</title>
+<script src="https://unpkg.com/three@0.160.0/build/three.min.js"></script>
+<style>
+:root{
+  --bg:#05070b;--panel:#080d15;--panel2:#0c1420;
+  --border:#1a2535;--border2:#243348;
+  --text:#e2e8f0;--text-alt:#cbd5e1;--text-muted:#94a3b8;--muted:#5a7090;
+  --accent:#22d3ee;--green:#34d399;--amber:#fbbf24;--rose:#f43f5e;--purple:#a78bfa;
+  --tooth-healthy:#ece8da;--tooth-diseased:#7a5030;--gum:#c06070;--bone:#d8cda8;
+}
+[data-theme="light"]{
+  --bg:#f4f1e8;--panel:#fffdf8;--panel2:#f0ede6;
+  --border:#d8d0c4;--border2:#c5bdb8;
+  --text:#1a1a2e;--text-alt:#2d2d4a;--text-muted:#666688;--muted:#9090aa;
+  --accent:#0077cc;--green:#1a9f5a;--amber:#d08020;--rose:#cc3355;--purple:#7766cc;
+  --tooth-healthy:#f5f0e5;--tooth-diseased:#8a5530;--gum:#b07080;--bone:#c8b898;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;overflow:hidden}
+body{background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,sans-serif;font-size:13px;display:flex;flex-direction:column}
+
+/* ── TOPBAR ── */
+.topbar{display:flex;align-items:center;gap:12px;padding:8px 16px;background:var(--panel);border-bottom:1px solid var(--border);flex-shrink:0;min-height:52px}
+.brand{display:flex;align-items:center;gap:9px;flex-shrink:0}
+.brand-ico{width:32px;height:32px;background:linear-gradient(135deg,var(--accent),var(--green));border-radius:8px;display:grid;place-items:center;font-size:16px}
+.brand h1{font-size:15px;font-weight:700;letter-spacing:-.02em}
+.brand small{font-size:10px;color:var(--muted);display:block}
+.topbar-stats{display:flex;align-items:center;gap:8px;margin-left:auto}
+.stat-pill{display:flex;align-items:center;gap:5px;padding:4px 10px;border-radius:6px;border:1px solid var(--border2);background:var(--panel2);font-size:11px;font-weight:600}
+.stat-pill .lbl{color:var(--muted)}
+.stat-pill .val{color:var(--accent)}
+.stat-pill.green .val{color:var(--green)}
+.stat-pill.amber .val{color:var(--amber)}
+#status-pill{border-color:rgba(34,211,238,.3);background:rgba(34,211,238,.07);color:var(--accent);font-size:11px;font-weight:600;padding:4px 12px;border-radius:6px;border:1px solid}
+#status-pill.idle{border-color:var(--border2);background:var(--panel2);color:var(--muted)}
+#status-pill.error{border-color:rgba(244,63,94,.3);background:rgba(244,63,94,.07);color:var(--rose)}
+#status-pill.success{border-color:rgba(52,211,153,.3);background:rgba(52,211,153,.07);color:var(--green)}
+.ico-btn{width:34px;height:34px;border:1px solid var(--border2);background:var(--panel2);border-radius:7px;color:var(--muted);cursor:pointer;display:grid;place-items:center;font-size:16px;transition:.15s}
+.ico-btn:hover{border-color:rgba(34,211,238,.4);color:var(--accent);background:rgba(34,211,238,.08)}
+
+/* ── MAIN ── */
+.main{display:flex;flex:1;min-height:0;overflow:hidden}
+
+/* ── TOOLS COLUMN ── */
+.tools-col{width:210px;flex-shrink:0;background:var(--panel);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden}
+.col-head{padding:10px 12px 8px;border-bottom:1px solid var(--border);flex-shrink:0}
+.col-head h2{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--muted)}
+.tools-list{flex:1;overflow-y:auto;padding:8px;display:flex;flex-direction:column;gap:4px}
+.tool-btn{display:flex;align-items:center;gap:9px;padding:8px 10px;border-radius:7px;border:1px solid var(--border2);background:var(--panel2);cursor:pointer;transition:.14s;width:100%;text-align:left;color:var(--text-alt)}
+.tool-btn:hover{border-color:rgba(34,211,238,.35);background:rgba(34,211,238,.06);color:var(--text)}
+.tool-btn.active{border-color:rgba(34,211,238,.55);background:rgba(34,211,238,.12);color:var(--accent)}
+.tool-btn.active .tool-icon{background:rgba(34,211,238,.2)}
+.tool-icon{width:30px;height:30px;border-radius:5px;background:rgba(255,255,255,.05);display:grid;place-items:center;font-size:16px;flex-shrink:0}
+.tool-info .tool-name{font-size:11px;font-weight:600;line-height:1.2}
+.tool-info .tool-desc{font-size:9px;color:var(--muted);line-height:1.3;margin-top:1px}
+.tool-hint{margin-top:6px;padding:7px 10px;border-radius:6px;background:rgba(251,191,36,.07);border:1px solid rgba(251,191,36,.2);font-size:10px;color:var(--amber);line-height:1.4}
+
+/* ── VIEWPORT ── */
+.viewport-col{flex:1;position:relative;background:var(--bg);display:flex;flex-direction:column;min-width:0}
+.viewport-toolbar{display:flex;align-items:center;gap:7px;padding:7px 10px;border-bottom:1px solid var(--border);flex-shrink:0;flex-wrap:wrap}
+.btn{display:inline-flex;align-items:center;gap:5px;padding:5px 11px;border-radius:6px;border:1px solid var(--border2);background:var(--panel2);color:var(--text);cursor:pointer;font-size:11px;font-weight:600;transition:.14s;white-space:nowrap;font-family:inherit}
+.btn:hover:not(:disabled){border-color:rgba(34,211,238,.4);background:rgba(34,211,238,.08);color:var(--accent)}
+.btn:disabled{opacity:.35;cursor:not-allowed}
+.btn.active,.btn.primary{border-color:rgba(34,211,238,.4);background:rgba(34,211,238,.1);color:var(--accent)}
+.btn.sm{padding:3px 8px;font-size:10px}
+.viewport-body{flex:1;position:relative;min-height:0}
+#sim-canvas{display:block;width:100%;height:100%}
+
+/* ── VIEWPORT HUD ── */
+.hud-overlay{position:absolute;inset:0;pointer-events:none}
+.hud-top-right{position:absolute;top:10px;right:10px;display:flex;flex-direction:column;gap:4px;align-items:flex-end}
+.hud-tag{padding:3px 8px;border-radius:4px;font-size:10px;font-weight:600;background:rgba(5,7,11,.7);border:1px solid var(--border2);color:var(--muted)}
+.hud-tag.active{color:var(--accent);border-color:rgba(34,211,238,.3)}
+.hud-bottom-left{position:absolute;bottom:12px;left:12px;font-size:11px;color:var(--muted)}
+.hud-crosshair{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:20px;height:20px;pointer-events:none;opacity:0;transition:opacity .2s}
+.hud-crosshair.visible{opacity:.7}
+.hud-crosshair::before,.hud-crosshair::after{content:"";position:absolute;background:var(--accent)}
+.hud-crosshair::before{width:2px;height:100%;left:50%;transform:translateX(-50%)}
+.hud-crosshair::after{height:2px;width:100%;top:50%;transform:translateY(-50%)}
+
+/* Tooth tooltip */
+#tooth-tooltip{position:absolute;padding:5px 10px;border-radius:5px;background:rgba(8,13,21,.92);border:1px solid var(--border2);font-size:11px;color:var(--text);pointer-events:none;opacity:0;transition:opacity .15s;white-space:nowrap;z-index:20}
+#tooth-tooltip .tt-name{font-weight:700;color:var(--accent)}
+#tooth-tooltip .tt-state{font-size:10px;color:var(--muted)}
+#tooth-tooltip.visible{opacity:1}
+
+/* Toast feedback */
+#toast{position:absolute;bottom:20px;left:50%;transform:translateX(-50%);padding:8px 16px;border-radius:8px;font-size:12px;font-weight:600;pointer-events:none;opacity:0;transition:opacity .25s;z-index:30;white-space:nowrap}
+#toast.show{opacity:1}
+#toast.ok{background:rgba(52,211,153,.15);border:1px solid rgba(52,211,153,.4);color:var(--green)}
+#toast.err{background:rgba(244,63,94,.12);border:1px solid rgba(244,63,94,.35);color:var(--rose)}
+#toast.info{background:rgba(34,211,238,.1);border:1px solid rgba(34,211,238,.3);color:var(--accent)}
+
+/* ── MISSION COLUMN ── */
+.mission-col{width:290px;flex-shrink:0;background:var(--panel);border-left:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden}
+.mission-active{flex:1;min-height:0;overflow-y:auto;padding:10px}
+.mission-header{margin-bottom:10px}
+.mission-header .m-name{font-size:13px;font-weight:700;color:var(--text)}
+.mission-header .m-sub{font-size:10px;color:var(--muted);margin-top:2px}
+.mission-header .m-diff{display:inline-block;padding:2px 7px;border-radius:4px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px}
+.diff-easy{background:rgba(52,211,153,.12);border:1px solid rgba(52,211,153,.3);color:var(--green)}
+.diff-med{background:rgba(251,191,36,.12);border:1px solid rgba(251,191,36,.3);color:var(--amber)}
+.diff-hard{background:rgba(244,63,94,.12);border:1px solid rgba(244,63,94,.3);color:var(--rose)}
+.mission-target{padding:8px 10px;border-radius:6px;background:var(--panel2);border:1px solid var(--border);margin-bottom:10px;font-size:11px}
+.mission-target .lbl{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:3px}
+.mission-target .val{color:var(--text-alt);font-weight:600}
+.mission-target .cond{color:var(--rose);font-size:10px;margin-top:2px}
+.steps-label{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-bottom:6px}
+.step-item{display:flex;align-items:flex-start;gap:8px;padding:7px 9px;border-radius:6px;border:1px solid transparent;margin-bottom:4px;transition:.15s}
+.step-item.done{background:rgba(52,211,153,.05);border-color:rgba(52,211,153,.15)}
+.step-item.active{background:rgba(34,211,238,.07);border-color:rgba(34,211,238,.25)}
+.step-item.pending{opacity:.45}
+.step-num{width:18px;height:18px;border-radius:50%;display:grid;place-items:center;font-size:9px;font-weight:700;flex-shrink:0;margin-top:1px}
+.step-item.done .step-num{background:rgba(52,211,153,.2);color:var(--green)}
+.step-item.active .step-num{background:rgba(34,211,238,.2);color:var(--accent)}
+.step-item.pending .step-num{background:rgba(255,255,255,.06);color:var(--muted)}
+.step-body .step-label{font-size:11px;font-weight:600;line-height:1.3}
+.step-item.done .step-body .step-label{color:var(--green)}
+.step-item.active .step-body .step-label{color:var(--accent)}
+.step-item.pending .step-body .step-label{color:var(--text-muted)}
+.step-body .step-tool{font-size:10px;color:var(--muted);margin-top:2px}
+.step-item.active .step-body .step-tool{color:rgba(34,211,238,.7)}
+.step-body .step-desc{font-size:10px;color:var(--muted);margin-top:2px;line-height:1.4}
+.mission-progress{height:4px;border-radius:2px;background:var(--border);margin:10px 0 6px;overflow:hidden}
+.mission-progress-fill{height:100%;background:linear-gradient(90deg,var(--accent),var(--green));border-radius:2px;transition:width .4s ease}
+.mission-score{font-size:10px;color:var(--muted);text-align:right}
+
+/* Mission selector */
+.mission-selector{border-top:1px solid var(--border);padding:10px;flex-shrink:0}
+.selector-label{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-bottom:6px}
+.mission-card{display:flex;align-items:center;gap:8px;padding:7px 9px;border-radius:6px;border:1px solid var(--border2);background:var(--panel2);cursor:pointer;margin-bottom:4px;transition:.14s}
+.mission-card:hover{border-color:rgba(34,211,238,.3);background:rgba(34,211,238,.06)}
+.mission-card.active{border-color:rgba(34,211,238,.5);background:rgba(34,211,238,.1)}
+.mission-card.done{border-color:rgba(52,211,153,.3);background:rgba(52,211,153,.05)}
+.mission-card .mc-icon{font-size:18px;flex-shrink:0}
+.mission-card .mc-info .mc-name{font-size:11px;font-weight:600;color:var(--text-alt)}
+.mission-card .mc-info .mc-sub{font-size:10px;color:var(--muted)}
+.mission-card .mc-badge{margin-left:auto;font-size:9px;font-weight:700;padding:2px 6px;border-radius:3px;flex-shrink:0}
+.mission-card.done .mc-badge{background:rgba(52,211,153,.15);color:var(--green)}
+.mission-card:not(.done) .mc-badge{background:var(--border);color:var(--muted)}
+
+/* ── MISSION COMPLETE MODAL ── */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.75);backdrop-filter:blur(6px);z-index:200;display:grid;place-items:center;padding:20px}
+.overlay.hidden{display:none}
+.modal{width:100%;max-width:420px;background:var(--panel2);border:1px solid rgba(52,211,153,.3);border-radius:14px;overflow:hidden}
+.modal-head{padding:20px 22px 12px;border-bottom:1px solid var(--border)}
+.modal-head h3{font-size:18px;font-weight:700;color:var(--green)}
+.modal-head p{font-size:12px;color:var(--muted);margin-top:4px}
+.modal-body{padding:20px 22px}
+.score-row{display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid var(--border);font-size:12px}
+.score-row:last-child{border-bottom:none}
+.score-row .sr-lbl{color:var(--text-muted)}
+.score-row .sr-val{font-weight:700;color:var(--accent)}
+.score-row .sr-val.green{color:var(--green)}
+.modal-foot{display:flex;gap:8px;padding:14px 22px;border-top:1px solid var(--border)}
+.modal-foot .btn{flex:1;justify-content:center;padding:9px}
+.btn.green{border-color:rgba(52,211,153,.4);background:rgba(52,211,153,.1);color:var(--green)}
+.btn.green:hover{background:rgba(52,211,153,.18)}
+
+/* ── IDLE OVERLAY ── */
+#idle-overlay{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;pointer-events:none;z-index:5}
+#idle-overlay.hidden{display:none}
+#idle-overlay .io-icon{font-size:56px;opacity:.08;line-height:1}
+#idle-overlay p{font-size:12px;color:var(--muted)}
+
+/* ── SCROLLBARS ── */
+::-webkit-scrollbar{width:4px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px}
+
+@keyframes pulse-ring{0%{box-shadow:0 0 0 0 rgba(34,211,238,.4)}100%{box-shadow:0 0 0 8px rgba(34,211,238,0)}}
+@keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-4px)}40%{transform:translateX(4px)}60%{transform:translateX(-3px)}80%{transform:translateX(3px)}}
+</style>
+</head>
+<body>
+
+<!-- TOPBAR -->
+<header class="topbar">
+  <div class="brand">
+    <div class="brand-ico">🦷</div>
+    <div>
+      <h1>Dental Surgery</h1>
+      <small>3D Surgical Simulator</small>
+    </div>
+  </div>
+  <div class="topbar-stats">
+    <div class="stat-pill green"><span class="lbl">Score</span><span class="val" id="hud-score">0</span></div>
+    <div class="stat-pill amber"><span class="lbl">Accuracy</span><span class="val" id="hud-acc">—</span></div>
+    <div class="stat-pill"><span class="lbl">Done</span><span class="val" id="hud-done">0/6</span></div>
+    <div id="status-pill" class="idle">Select a mission to begin</div>
+    <button class="ico-btn" id="spin-btn" title="Toggle auto-spin">&#x25BA;</button>
+    <button class="ico-btn" id="reset-cam-btn" title="Reset camera">&#x21BA;</button>
+    <button class="ico-btn" id="theme-btn" title="Toggle light/dark mode" style="font-size:13px">&#9770;</button>
+  </div>
+</header>
+
+<!-- MAIN -->
+<div class="main">
+
+  <!-- TOOLS -->
+  <aside class="tools-col">
+    <div class="col-head"><h2>&#9874; Surgical Tools</h2></div>
+    <div class="tools-list" id="tools-list"></div>
+  </aside>
+
+  <!-- VIEWPORT -->
+  <section class="viewport-col">
+    <div class="viewport-toolbar">
+      <button class="btn sm active" id="view-both-btn">Both Jaws</button>
+      <button class="btn sm" id="view-upper-btn">Upper</button>
+      <button class="btn sm" id="view-lower-btn">Lower</button>
+      <span style="flex:1"></span>
+      <button class="btn sm" id="wire-btn">&#x2B22; Wire</button>
+      <button class="btn sm" id="xray-btn">&#x2718; X-Ray</button>
+    </div>
+    <div class="viewport-body">
+      <canvas id="sim-canvas"></canvas>
+      <div class="hud-overlay">
+        <div class="hud-top-right">
+          <div class="hud-tag active" id="hud-view">Full Arch · 3D</div>
+          <div class="hud-tag" id="hud-teeth">32 Teeth</div>
+          <div class="hud-tag" id="hud-tool-cur">No Tool Selected</div>
+        </div>
+        <div class="hud-bottom-left">&#x1F5B1; Drag · orbit &nbsp;|&nbsp; Scroll · zoom &nbsp;|&nbsp; Click tooth · interact</div>
+        <div class="hud-crosshair" id="hud-crosshair"></div>
+      </div>
+      <div id="tooth-tooltip"><div class="tt-name"></div><div class="tt-state"></div></div>
+      <div id="toast"></div>
+      <div id="idle-overlay">
+        <div class="io-icon">🦷</div>
+        <p>Select a mission from the right panel to begin surgery</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- MISSION -->
+  <aside class="mission-col">
+    <div class="col-head"><h2>&#9877; Mission Control</h2></div>
+    <div class="mission-active" id="mission-active">
+      <div style="text-align:center;padding:20px 0;color:var(--muted);font-size:12px">
+        No active mission.<br>Select one below.
+      </div>
+    </div>
+    <div class="mission-selector">
+      <div class="selector-label">&#9776; Available Missions</div>
+      <div id="mission-list"></div>
+    </div>
+  </aside>
+</div>
+
+<!-- MISSION COMPLETE MODAL -->
+<div class="overlay hidden" id="complete-overlay">
+  <div class="modal">
+    <div class="modal-head">
+      <h3>&#10003; Mission Complete!</h3>
+      <p id="complete-subtitle"></p>
+    </div>
+    <div class="modal-body" id="complete-body"></div>
+    <div class="modal-foot">
+      <button class="btn" id="complete-retry">&#x21BA; Retry</button>
+      <button class="btn green" id="complete-next">Next Mission &#x203A;</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════════════════════════════
+// DATA — TOOLS
+// ═══════════════════════════════════════════════════════════════════════════════
+const TOOLS = {
+  mirror:    { id:'mirror',    icon:'🪞', name:'Dental Mirror',        desc:'Inspect & visualize field', color:0x88ccff },
+  retractor: { id:'retractor', icon:'↕',  name:'Retractor',            desc:'Retract soft tissue & lips', color:0xaaffcc },
+  elevator:  { id:'elevator',  icon:'⬆',  name:'Periosteal Elevator',  desc:'Elevate periosteum & gum', color:0xffddaa },
+  crane:     { id:'crane',     icon:'↩',  name:'Crane Pick',           desc:'Luxate & loosen teeth', color:0xffbbaa },
+  forceps:   { id:'forceps',   icon:'⚙',  name:'Extraction Forceps',   desc:'Grasp and remove teeth', color:0xff8888 },
+  curette:   { id:'curette',   icon:'⌒',  name:'Surgical Curette',     desc:'Debride & clean tissue', color:0xaaccff },
+  rongeur:   { id:'rongeur',   icon:'⚒',  name:'Bone Rongeur',         desc:'Trim and reshape bone', color:0xddbbff },
+  scalpel:   { id:'scalpel',   icon:'⚔',  name:'Scalpel Handle',       desc:'Make precise incisions', color:0xffccdd },
+  needle:    { id:'needle',    icon:'⊕',  name:'Needle Holder',        desc:'Drive suture needles', color:0xccffdd },
+  scissors:  { id:'scissors',  icon:'✂',  name:'Surgical Scissors',    desc:'Cut tissue & sutures', color:0xffeeaa },
+};
+const TOOL_ORDER = ['mirror','retractor','elevator','crane','forceps','curette','rongeur','scalpel','needle','scissors'];
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// DATA — MISSIONS
+// ═══════════════════════════════════════════════════════════════════════════════
+const MISSIONS = [
+  {
+    id:'extraction', icon:'🔴', name:'Tooth Extraction', diff:'easy', pts:100,
+    desc:'Remove severely decayed molar — non-restorable due to periapical abscess',
+    target:{ jaw:'upper', idx:2, label:'UR 1st Molar (#3)' },
+    condition:'Severe decay · Periapical abscess',
+    steps:[
+      { tool:'mirror',    label:'Examine & Diagnose',          desc:'Inspect affected tooth and periapical area for extent of disease' },
+      { tool:'retractor', label:'Retract Soft Tissue',         desc:'Retract cheek and lips to expose full surgical field' },
+      { tool:'elevator',  label:'Sever Periodontal Ligament',  desc:'Use elevator to sever PDL fibres and loosen the tooth' },
+      { tool:'crane',     label:'Luxate the Tooth',            desc:'Apply crane pick to expand alveolar socket fully' },
+      { tool:'forceps',   label:'Extract the Tooth',           desc:'Grip firmly with extraction forceps; controlled rotation & pull' },
+      { tool:'curette',   label:'Debride the Socket',          desc:'Remove all granulation tissue and bone fragments from socket' },
+      { tool:'needle',    label:'Place Sutures',               desc:'Use needle holder to close wound with resorbable sutures' },
+    ]
+  },
+  {
+    id:'implant', icon:'🔩', name:'Dental Implant', diff:'med', pts:180,
+    desc:'Place titanium implant in healed extraction site to restore missing molar',
+    target:{ jaw:'upper', idx:13, label:'UL 1st Molar (#14)' },
+    condition:'Edentulous ridge · Adequate bone volume',
+    steps:[
+      { tool:'mirror',    label:'Assess Bone Quality',         desc:'Inspect the edentulous ridge for bone volume and soft tissue' },
+      { tool:'scalpel',   label:'Make Crestal Incision',       desc:'Incise the gingiva along the crest of the ridge' },
+      { tool:'elevator',  label:'Reflect Mucoperiosteal Flap', desc:'Elevate full-thickness flap to expose alveolar bone' },
+      { tool:'rongeur',   label:'Prepare Implant Site',        desc:'Rongeur excess bone and shape the osteotomy site' },
+      { tool:'curette',   label:'Clean the Osteotomy',         desc:'Irrigate and debride the implant site of soft tissue' },
+      { tool:'needle',    label:'Close with Sutures',          desc:'Approximate flap margins with non-resorbable sutures' },
+    ]
+  },
+  {
+    id:'rootcanal', icon:'🔬', name:'Root Canal Treatment', diff:'med', pts:160,
+    desc:'Endodontic therapy to save an infected tooth via pulp debridement and canal obturation',
+    target:{ jaw:'upper', idx:7, label:'UR Central Incisor (#8)' },
+    condition:'Pulpitis · Infected root canal',
+    steps:[
+      { tool:'mirror',    label:'Diagnose Pulp Status',        desc:'Use mirror to check for sinus tract and percussion tenderness' },
+      { tool:'scalpel',   label:'Create Access Cavity',        desc:'Scalpel handle to mount #2 round bur for access preparation' },
+      { tool:'curette',   label:'Remove Coronal Pulp',         desc:'Extirpate the infected coronal pulp tissue' },
+      { tool:'curette',   label:'Clean Root Canals',           desc:'Instrument canals to working length and irrigate with NaOCl' },
+      { tool:'mirror',    label:'Verify Canal Cleanliness',    desc:'Confirm canals are patent, clean, and ready for obturation' },
+    ]
+  },
+  {
+    id:'bonegraft', icon:'🦴', name:'Bone Grafting', diff:'hard', pts:220,
+    desc:'Augment deficient alveolar bone to support future implant placement',
+    target:{ jaw:'lower', idx:2, label:'LR 1st Molar (#30)' },
+    condition:'Bone deficiency · Pre-implant site preparation',
+    steps:[
+      { tool:'mirror',    label:'Assess Bone Defect',          desc:'Evaluate the extent of bone loss with mirror and palpation' },
+      { tool:'scalpel',   label:'Create Flap Incision',        desc:'Paracrestal incision with releasing incisions for access' },
+      { tool:'elevator',  label:'Expose Bone Defect',          desc:'Reflect mucoperiosteal flap to fully visualize bony defect' },
+      { tool:'rongeur',   label:'Prepare Recipient Site',      desc:'Decorticalize bone surface with rongeur to stimulate vascularity' },
+      { tool:'curette',   label:'Clean Graft Bed',             desc:'Remove fibrous tissue and debris from defect site' },
+      { tool:'needle',    label:'Secure Flap with Sutures',    desc:'Tension-free closure over graft material using mattress sutures' },
+    ]
+  },
+  {
+    id:'gumgraft', icon:'🩺', name:'Gum Grafting', diff:'hard', pts:200,
+    desc:'Free gingival graft to treat gum recession and cover exposed root surface',
+    target:{ jaw:'lower', idx:5, label:'LR Canine (#27)' },
+    condition:'Gum recession · Root exposure',
+    steps:[
+      { tool:'mirror',    label:'Assess Recession Defect',     desc:'Measure recession depth and width with periodontal probe' },
+      { tool:'scalpel',   label:'Harvest Donor Graft',         desc:'Palatal incision to harvest free gingival graft of adequate size' },
+      { tool:'scissors',  label:'Trim Graft to Size',          desc:'Trim graft to correct dimensions and remove fatty tissue' },
+      { tool:'scalpel',   label:'Prepare Recipient Site',      desc:'De-epithelialise recipient bed and create bleeding surface' },
+      { tool:'needle',    label:'Suture Graft in Place',       desc:'Stabilise graft with sling sutures; ensure passive adaptation' },
+    ]
+  },
+  {
+    id:'apicoectomy', icon:'⚡', name:'Apicoectomy', diff:'hard', pts:240,
+    desc:'Root-end surgery to remove infected periapical tissue when root canal retreatment is contraindicated',
+    target:{ jaw:'upper', idx:8, label:'UL Central Incisor (#9)' },
+    condition:'Periapical cyst · Failed root canal',
+    steps:[
+      { tool:'mirror',    label:'Confirm Periapical Lesion',   desc:'Use mirror and radiographic correlation to confirm cyst extent' },
+      { tool:'scalpel',   label:'Semilunar Flap Incision',     desc:'Curvilinear incision in attached gingiva for access to apex' },
+      { tool:'elevator',  label:'Reflect the Flap',            desc:'Elevate the mucoperiosteal flap to expose labial bone plate' },
+      { tool:'rongeur',   label:'Remove Cortical Bone',        desc:'Bone window over periapical lesion using rongeur forceps' },
+      { tool:'curette',   label:'Enucleate the Cyst',          desc:'Curette all infected and cystic tissue from the periapical area' },
+      { tool:'scissors',  label:'Resect Root Apex',            desc:'Remove 3mm of root apex at 90° bevel to eliminate accessory canals' },
+      { tool:'needle',    label:'Close the Flap',              desc:'Reposition flap and suture with interrupted sutures' },
+    ]
+  },
+];
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// TOOTH DATA
+// ═══════════════════════════════════════════════════════════════════════════════
+const TOOTH_TYPES_SEQ = [
+  'molar','molar','molar','premolar','premolar','canine','lat_incisor','cen_incisor',
+  'cen_incisor','lat_incisor','canine','premolar','premolar','molar','molar','molar'
+];
+const TOOTH_DIMS = {
+  molar:       { w:0.25, ch:0.24, rh:0.26, d:0.21 },
+  premolar:    { w:0.19, ch:0.26, rh:0.28, d:0.17 },
+  canine:      { w:0.20, ch:0.32, rh:0.31, d:0.16 },
+  lat_incisor: { w:0.18, ch:0.29, rh:0.28, d:0.13 },
+  cen_incisor: { w:0.21, ch:0.30, rh:0.29, d:0.13 },
+};
+// t positions for 16 teeth (0=viewer-left, 1=viewer-right)
+const ARCH_T = [
+  0.035,0.095,0.165,0.235,0.300,0.365,0.435,0.470,
+  0.530,0.565,0.635,0.700,0.765,0.835,0.905,0.965
+];
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════════════════════════════════════
+const gs = {
+  mission:null, stepIdx:0, tool:null,
+  score:0, totalAttempts:0, correctAttempts:0,
+  completedMissions:new Set(),
+  toothStates:{}, // key:"upper_0".."lower_15" → {missing,diseased,treated,extracted}
+  phase:'idle',   // 'idle'|'playing'|'animating'|'complete'
+  autoSpin:true, showWire:false, showXRay:false,
+  viewMode:'both', // 'both'|'upper'|'lower'
+};
+
+function toothKey(jaw,idx){ return `${jaw}_${idx}`; }
+function toothState(jaw,idx){ return gs.toothStates[toothKey(jaw,idx)] || {}; }
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// THREE.JS
+// ═══════════════════════════════════════════════════════════════════════════════
+const canvas = document.getElementById('sim-canvas');
+let renderer, camera, scene;
+const orbit = { theta:0.15, phi:1.05, r:6.2, px:0, py:0.1 };
+let drag=null, dragDist=0, animId=null;
+
+// Scene objects
+const toothObjs = {}; // key → { group, crownMesh, mat, wireMat, jaw, idx }
+const clickTargets = [];
+const gumObjs = { upper:null, lower:null };
+const boneObjs = { upper:null, lower:null };
+const upperGroup = new THREE.Group();
+const lowerGroup = new THREE.Group();
+let palate = null, tongue = null;
+const anims = []; // active animations
+let hoveredTooth = null;
+const raycaster = new THREE.Raycaster();
+const mouse = new THREE.Vector2();
+
+function initRenderer(){
+  renderer = new THREE.WebGLRenderer({ canvas, antialias:true, alpha:false });
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio,2));
+  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  renderer.outputColorSpace = THREE.SRGBColorSpace;
+  renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure = 1.05;
+  renderer.setClearColor(0x05070b,1);
+  camera = new THREE.PerspectiveCamera(42,1,0.05,80);
+  new ResizeObserver(resizeR).observe(canvas.parentElement);
+  resizeR();
+}
+
+function resizeR(){
+  if(!renderer) return;
+  const p = canvas.parentElement.getBoundingClientRect();
+  renderer.setSize(p.width, p.height, false);
+  camera.aspect = p.width / Math.max(p.height,1);
+  camera.updateProjectionMatrix();
+}
+
+// ── Arch geometry helpers ──
+function archXZ(t, sc=1){
+  const a = Math.PI * t;
+  const r = (1.52 + 0.32 * Math.sin(a)) * sc;
+  return { x: -Math.cos(a)*r, z: -Math.sin(a)*0.92*sc };
+}
+function archRotY(t){
+  const dt = 0.003, p0=archXZ(t-dt), p1=archXZ(t+dt);
+  return Math.atan2(p1.x-p0.x, p1.z-p0.z);
+}
+
+function smoothstep(a,b,x){
+  const t = clamp((x-a)/(b-a),0,1);
+  return t*t*(3-2*t);
+}
+
+function createArchRibbonGeometry(jaw, width, height, yBase, scaleSpread=0.12){
+  const isUp = jaw==='upper';
+  const rootDir = isUp ? 1 : -1;
+  const segs = 88, bands = 10;
+  const verts = [], idx = [];
+  for(let i=0;i<=segs;i++){
+    const t = i/segs;
+    for(let j=0;j<=bands;j++){
+      const u = j/bands*2-1;
+      const p = archXZ(t, 1 + u*scaleSpread);
+      const dome = Math.pow(1-Math.abs(u), 0.65);
+      const scallop = 0.018 * Math.sin(t*Math.PI*32) * (1-Math.abs(u));
+      verts.push(p.x, yBase + rootDir*(height*dome + scallop), p.z);
+    }
+  }
+  for(let i=0;i<segs;i++){
+    for(let j=0;j<bands;j++){
+      const a = i*(bands+1)+j, b = a+1, c = a+(bands+1), d = c+1;
+      idx.push(a,c,b, b,c,d);
+    }
+  }
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.Float32BufferAttribute(verts,3));
+  geo.setIndex(idx);
+  geo.computeVertexNormals();
+  return geo;
+}
+
+function crownRadiusProfile(type, s){
+  const cervical = 0.68 + 0.12*smoothstep(0,0.18,s);
+  const body = 1.02 - 0.13*smoothstep(0.58,1,s);
+  const typeBulge = type==='molar' ? 0.08*Math.sin(Math.PI*s)
+                  : type==='canine' ? 0.04*Math.sin(Math.PI*s)
+                  : 0.02*Math.sin(Math.PI*s);
+  return Math.min(cervical, body) + typeBulge;
+}
+
+function cuspHeight(type, x, z){
+  if(type==='molar'){
+    const q1 = Math.exp(-((x-0.45)**2+(z-0.45)**2)*7);
+    const q2 = Math.exp(-((x+0.45)**2+(z-0.45)**2)*7);
+    const q3 = Math.exp(-((x-0.45)**2+(z+0.45)**2)*7);
+    const q4 = Math.exp(-((x+0.45)**2+(z+0.45)**2)*7);
+    return 0.055*(q1+q2+q3+q4) - 0.025*Math.exp(-(x*x+z*z)*10);
+  }
+  if(type==='premolar'){
+    return 0.05*(Math.exp(-(x*x+(z-0.48)**2)*9)+Math.exp(-(x*x+(z+0.48)**2)*9))
+      - 0.018*Math.exp(-(x*x+z*z)*12);
+  }
+  if(type==='canine') return 0.075*Math.exp(-(x*x+z*z)*7);
+  return 0.026*Math.exp(-(z*z)*12) - 0.01*Math.abs(x);
+}
+
+function createCrownGeometry(dims, type, isUp){
+  const segs = 34, rings = 18;
+  const dir = isUp ? -1 : 1;
+  const verts = [], idx = [];
+  for(let i=0;i<=rings;i++){
+    const s = i/rings;
+    const yBase = dir*dims.ch*s;
+    const profile = crownRadiusProfile(type,s);
+    for(let j=0;j<segs;j++){
+      const a = j/segs*Math.PI*2;
+      const c = Math.cos(a), sn = Math.sin(a);
+      const squareRound = 0.88 + 0.12*Math.max(Math.abs(c),Math.abs(sn));
+      let x = c * dims.w * 0.55 * profile * squareRound;
+      let z = sn * dims.d * 0.56 * profile * (type.includes('incisor') ? 0.78 : 1);
+      let y = yBase;
+      if(i===rings){
+        y += dir * dims.ch * cuspHeight(type, c, sn);
+      }
+      if(type.includes('incisor') && i>rings*0.72){
+        x *= 1.06;
+        z *= 0.62;
+      }
+      verts.push(x,y,z);
+    }
+  }
+  const cervCenter = verts.length/3;
+  verts.push(0,0,0);
+  const topCenter = verts.length/3;
+  verts.push(0,dir*dims.ch*(type==='canine'?1.04:1.0),0);
+  for(let i=0;i<rings;i++){
+    for(let j=0;j<segs;j++){
+      const a = i*segs+j, b = i*segs+(j+1)%segs, c = (i+1)*segs+j, d = (i+1)*segs+(j+1)%segs;
+      idx.push(a,c,b, b,c,d);
+    }
+  }
+  for(let j=0;j<segs;j++){
+    idx.push(cervCenter, (j+1)%segs, j);
+    idx.push(topCenter, rings*segs+j, rings*segs+(j+1)%segs);
+  }
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.Float32BufferAttribute(verts,3));
+  geo.setIndex(idx);
+  geo.computeVertexNormals();
+  return geo;
+}
+
+function makeRootCluster(dims, type, isUp, diseased){
+  const rootDir = isUp ? 1 : -1;
+  const group = new THREE.Group();
+  const count = type==='molar' ? 3 : type==='premolar' ? 2 : 1;
+  const color = diseased ? 0x6b4328 : 0xcbbf9e;
+  const mat = new THREE.MeshStandardMaterial({ color, roughness:0.78, metalness:0 });
+  const offsets = count===3 ? [[-0.035,0.032],[0.035,0.032],[0,-0.034]]
+                : count===2 ? [[-0.028,0.018],[0.028,-0.018]]
+                : [[0,0]];
+  offsets.forEach(([x,z],i)=>{
+    const rootGeo = new THREE.CylinderGeometry(dims.w*0.11, dims.w*0.22, dims.rh*(count===1?1.05:0.9), 10, 5);
+    const root = new THREE.Mesh(rootGeo, mat);
+    root.position.set(x, rootDir*(dims.rh*0.5+0.018), z);
+    root.rotation.z = rootDir * x * 2.5;
+    root.rotation.x = rootDir * (i-1) * 0.08;
+    root.castShadow = true;
+    group.add(root);
+  });
+  return group;
+}
+
+function addOcclusalDetail(group, dims, type, isUp, diseased){
+  const dir = isUp ? -1 : 1;
+  const mat = new THREE.MeshStandardMaterial({
+    color: diseased ? 0x3a2014 : 0xb8aa86,
+    roughness: 0.92,
+    metalness: 0
+  });
+  const makeGroove = pts=>{
+    const curve = new THREE.CatmullRomCurve3(pts.map(p=>new THREE.Vector3(p[0], dir*dims.ch*1.012, p[1])));
+    const geo = new THREE.TubeGeometry(curve, 16, diseased ? 0.006 : 0.0035, 5, false);
+    const mesh = new THREE.Mesh(geo, mat);
+    group.add(mesh);
+  };
+  if(type==='molar'){
+    makeGroove([[-dims.w*.27,0],[dims.w*.27,0]]);
+    makeGroove([[0,-dims.d*.28],[0,dims.d*.28]]);
+  } else if(type==='premolar'){
+    makeGroove([[0,-dims.d*.25],[0,dims.d*.25]]);
+  } else if(type.includes('incisor')){
+    makeGroove([[-dims.w*.32,0],[dims.w*.32,0]]);
+  }
+  if(diseased){
+    const pitGeo = new THREE.SphereGeometry(dims.w*0.18, 12, 8);
+    const pit = new THREE.Mesh(pitGeo, mat);
+    pit.scale.set(1,0.18,0.72);
+    pit.position.set(dims.w*0.08, dir*dims.ch*1.025, -dims.d*0.06);
+    group.add(pit);
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// BUILD SCENE
+// ═══════════════════════════════════════════════════════════════════════════════
+function buildScene(){
+  scene = new THREE.Scene();
+  const bgColor = _currentTheme === 'light' ? 0xf4f1e8 : 0x05070b;
+  scene.background = new THREE.Color(bgColor);
+  scene.fog = new THREE.Fog(bgColor, 14, 28);
+
+  // Lights
+  const amb = new THREE.AmbientLight(0x9aa7b8, 0.42); scene.add(amb);
+  const key = new THREE.DirectionalLight(0xfff3df, 1.35);
+  key.position.set(2.4,5.2,4.4);
+  key.castShadow=true;
+  key.shadow.mapSize.set(1024,1024);
+  scene.add(key);
+  const fill = new THREE.DirectionalLight(0x8bb9ff, 0.42);
+  fill.position.set(-3,-1,3); scene.add(fill);
+  const rim = new THREE.DirectionalLight(0x22d3ee, 0.22);
+  rim.position.set(0,2,-4); scene.add(rim);
+
+  // Operating light (spotlight from above)
+  const spot = new THREE.SpotLight(0xffffff, 1.7, 12, Math.PI/5.5, 0.5);
+  spot.position.set(0,7,1); spot.target.position.set(0,0,0);
+  spot.castShadow = true;
+  scene.add(spot); scene.add(spot.target);
+
+  // Grid
+  const grid = new THREE.GridHelper(10,16, 0x1a2535, 0x0f1824);
+  grid.position.y = -2.6; scene.add(grid);
+
+  // Jaw groups
+  scene.add(upperGroup);
+  scene.add(lowerGroup);
+  upperGroup.position.y = 0.48;
+  lowerGroup.position.y = -0.48;
+
+  buildJawParts('upper');
+  buildJawParts('lower');
+
+  // Palate (rough dome behind upper arch)
+  {
+    const geo = new THREE.SphereGeometry(1.55,32,14,0,Math.PI);
+    const mat = new THREE.MeshStandardMaterial({ color:0xb85d70, roughness:0.96, metalness:0, side:THREE.BackSide });
+    palate = new THREE.Mesh(geo,mat);
+    palate.scale.set(1,0.28,0.78);
+    palate.position.set(0,0,-0.15);
+    palate.rotation.z = Math.PI;
+    palate.rotation.x = -Math.PI*0.08;
+    upperGroup.add(palate);
+  }
+  // Tongue (oval in lower arch)
+  {
+    const geo = new THREE.SphereGeometry(1.15,32,14,0,Math.PI);
+    const mat = new THREE.MeshStandardMaterial({ color:0xc9485b, roughness:0.98, metalness:0, side:THREE.FrontSide });
+    tongue = new THREE.Mesh(geo,mat);
+    tongue.scale.set(1,0.22,0.82);
+    tongue.position.set(0,0.08,-0.05);
+    tongue.rotation.z = Math.PI;
+    tongue.rotation.x = Math.PI*0.08;
+    lowerGroup.add(tongue);
+  }
+
+  renderLoop();
+}
+
+function buildJawParts(jaw){
+  const isUp = jaw==='upper';
+  const parent = isUp ? upperGroup : lowerGroup;
+
+  // Alveolar bone shelf
+  {
+    const geo = createArchRibbonGeometry(jaw, 0.36, 0.16, isUp ? 0.06 : -0.06, 0.15);
+    const mat = new THREE.MeshStandardMaterial({ color:0xd5c899, roughness:0.84, metalness:0.02 });
+    const mesh = new THREE.Mesh(geo,mat);
+    mesh.receiveShadow = true;
+    boneObjs[jaw] = mesh;
+    parent.add(mesh);
+  }
+
+  // Gingiva with a scalloped ridge instead of a simple tube.
+  {
+    const geo = createArchRibbonGeometry(jaw, 0.24, 0.09, isUp ? -0.035 : 0.035, 0.10);
+    const mat = new THREE.MeshStandardMaterial({ color:0xc45f70, roughness:0.93, metalness:0 });
+    const mesh = new THREE.Mesh(geo,mat);
+    mesh.receiveShadow = true;
+    gumObjs[jaw] = mesh;
+    parent.add(mesh);
+  }
+
+  // Teeth
+  for(let i=0;i<16;i++){
+    makeTooth(jaw,i,parent);
+  }
+}
+
+function makeTooth(jaw, idx, parent){
+  const isUp = jaw==='upper';
+  const t = ARCH_T[idx];
+  const type = TOOTH_TYPES_SEQ[idx];
+  const dims = TOOTH_DIMS[type];
+  const pos = archXZ(t);
+  const rotY = archRotY(t) + (type.includes('incisor') ? Math.PI / 2 : 0);
+  const key = toothKey(jaw,idx);
+  const st = toothState(jaw,idx);
+
+  if(st.missing || st.extracted) return;
+
+  const group = new THREE.Group();
+  group.position.set(pos.x, 0, pos.z);
+  group.rotation.y = rotY;
+
+  const diseased     = !!st.diseased;
+  const treated      = !!st.treated;
+  const implantSite  = !!st.implantSite;
+
+  // Crown
+  const crownGeo = createCrownGeometry(dims, type, isUp);
+  const crownColor = implantSite ? 0x334455
+                   : treated    ? 0xd0e8f0
+                   : diseased   ? 0x7a5030
+                                : 0xece8da;
+  const enamelColor = new THREE.Color(crownColor);
+  if(!implantSite && !diseased){
+    const shade = (Math.sin(idx*12.9898 + (isUp?2.4:5.1))*0.5+0.5) * 0.055 - 0.018;
+    enamelColor.offsetHSL(0.018, -0.04, shade);
+  }
+  const crownMat = new THREE.MeshStandardMaterial({
+    color: enamelColor,
+    roughness: implantSite ? 0.95 : diseased ? 0.58 : 0.36,
+    metalness: implantSite ? 0 : 0.025,
+    transparent: implantSite, opacity: implantSite ? 0.35 : 1.0,
+    emissive: new THREE.Color(0,0,0), emissiveIntensity: 0,
+  });
+  const crownWireMat = new THREE.MeshBasicMaterial({ color:0x22d3ee, wireframe:true, transparent:true, opacity:0.06 });
+  const crown  = new THREE.Mesh(crownGeo, crownMat);
+  const crownW = new THREE.Mesh(crownGeo, crownWireMat);
+  crownW.visible = gs.showWire;
+  crown.userData = { tooth:true, jaw, idx, key };
+  crown.castShadow = true;
+  crown.receiveShadow = true;
+  group.add(crown);
+  group.add(crownW);
+  addOcclusalDetail(group, dims, type, isUp, diseased);
+
+  // Roots: molars and premolars split into multiple tapered roots.
+  group.add(makeRootCluster(dims, type, isUp, diseased));
+
+  parent.add(group);
+  clickTargets.push(crown);
+  toothObjs[key] = { group, crownMesh:crown, wireObj:crownW, mat:crownMat, jaw, idx, type, dims, t };
+}
+
+function rebuildTooth(jaw, idx){
+  const key = toothKey(jaw,idx);
+  const existing = toothObjs[key];
+  if(existing){
+    const parent = jaw==='upper' ? upperGroup : lowerGroup;
+    parent.remove(existing.group);
+    // dispose
+    existing.group.traverse(o=>{ if(o.geometry)o.geometry.dispose(); if(o.material)(Array.isArray(o.material)?o.material:[o.material]).forEach(m=>m.dispose()); });
+    delete toothObjs[key];
+    const ci = clickTargets.indexOf(existing.crownMesh);
+    if(ci>=0) clickTargets.splice(ci,1);
+  }
+  const parent = jaw==='upper' ? upperGroup : lowerGroup;
+  makeTooth(jaw, idx, parent);
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// ORBIT CONTROLS
+// ═══════════════════════════════════════════════════════════════════════════════
+function clamp(v,mn,mx){ return Math.max(mn,Math.min(mx,v)); }
+
+canvas.addEventListener('pointerdown', e=>{
+  if(e.button!==0) return;
+  drag = { x:e.clientX, y:e.clientY };
+  dragDist = 0;
+  canvas.setPointerCapture(e.pointerId);
+});
+window.addEventListener('pointermove', e=>{
+  if(drag){
+    const dx = e.clientX-drag.x, dy = e.clientY-drag.y;
+    dragDist += Math.abs(dx)+Math.abs(dy);
+    orbit.theta -= dx*0.007;
+    orbit.phi    = clamp(orbit.phi + dy*0.007, 0.15, Math.PI-0.15);
+    drag = { x:e.clientX, y:e.clientY };
+    if(dragDist>3) gs.autoSpin=false;
+  }
+  updateHover(e);
+});
+window.addEventListener('pointerup', e=>{
+  if(!drag) return;
+  if(dragDist<5) handleClick(e);
+  drag=null;
+});
+canvas.addEventListener('wheel', e=>{
+  e.preventDefault();
+  orbit.r = clamp(orbit.r + e.deltaY*0.008, 2.5, 12);
+}, { passive:false });
+
+function getCameraPos(){
+  return new THREE.Vector3(
+    orbit.r * Math.sin(orbit.phi) * Math.sin(orbit.theta) + orbit.px,
+    orbit.r * Math.cos(orbit.phi) + orbit.py,
+    orbit.r * Math.sin(orbit.phi) * Math.cos(orbit.theta)
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// HOVER & CLICK INTERACTION
+// ═══════════════════════════════════════════════════════════════════════════════
+function getMouseNDC(e){
+  const rect = canvas.getBoundingClientRect();
+  return {
+    x: (e.clientX-rect.left)/rect.width*2-1,
+    y: -((e.clientY-rect.top)/rect.height)*2+1
+  };
+}
+
+function updateHover(e){
+  const nd = getMouseNDC(e);
+  mouse.set(nd.x, nd.y);
+  raycaster.setFromCamera(mouse, camera);
+  const hits = raycaster.intersectObjects(clickTargets, false);
+  const tt = document.getElementById('tooth-tooltip');
+  const hc = document.getElementById('hud-crosshair');
+
+  if(hits.length>0){
+    const obj = hits[0].object;
+    const { jaw, idx } = obj.userData;
+    const key = toothKey(jaw,idx);
+    const type = TOOTH_TYPES_SEQ[idx];
+    const st = toothState(jaw,idx);
+    const label = toothLabel(jaw,idx);
+
+    if(hoveredTooth !== key){
+      if(hoveredTooth && toothObjs[hoveredTooth]){
+        toothObjs[hoveredTooth].mat.emissiveIntensity = 0;
+      }
+      hoveredTooth = key;
+      if(toothObjs[key] && !isTargetTooth(jaw,idx)){
+        toothObjs[key].mat.emissive.setHex(0x334455);
+        toothObjs[key].mat.emissiveIntensity = 0.15;
+      }
+    }
+
+    const isSocket = toothObjs[key]?.isSocket;
+    tt.querySelector('.tt-name').textContent = isSocket ? 'Extraction Socket' : label;
+    tt.querySelector('.tt-state').textContent = isSocket ? '⚕ Post-extraction site'
+      : st.diseased ? '⚠ Diseased' : st.extracted ? '✓ Extracted' : st.treated ? '✓ Treated' : 'Healthy';
+
+    const rect = canvas.getBoundingClientRect();
+    tt.style.left = (e.clientX-rect.left+12)+'px';
+    tt.style.top  = (e.clientY-rect.top-30)+'px';
+    tt.classList.add('visible');
+    hc.classList.add('visible');
+    canvas.style.cursor = 'crosshair';
+  } else {
+    if(hoveredTooth){
+      const [hj,hi] = hoveredTooth.split('_');
+      if(toothObjs[hoveredTooth] && !isTargetTooth(hj, Number(hi))){
+        toothObjs[hoveredTooth].mat.emissiveIntensity = 0;
+      }
+      hoveredTooth = null;
+    }
+    tt.classList.remove('visible');
+    hc.classList.remove('visible');
+    canvas.style.cursor = 'grab';
+  }
+}
+
+function isTargetTooth(jaw,idx){
+  if(!gs.mission) return false;
+  const m = MISSIONS.find(x=>x.id===gs.mission);
+  return m && m.target.jaw===jaw && m.target.idx===Number(idx);
+}
+
+function toothLabel(jaw,idx){
+  const isUp = jaw==='upper';
+  // viewer's left (idx 0-7) = patient's RIGHT; viewer's right (idx 8-15) = patient's LEFT
+  const side = idx<8 ? (isUp?'UR':'LR') : (isUp?'UL':'LL');
+  const posNames = ['3rd Molar','2nd Molar','1st Molar','2nd Premolar','1st Premolar','Canine','Lateral Incisor','Central Incisor'];
+  const posIdx = idx<8 ? idx : (15-idx);
+  const upperNums = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16];
+  const lowerNums = [32,31,30,29,28,27,26,25,24,23,22,21,20,19,18,17];
+  const num = isUp ? upperNums[idx] : lowerNums[idx];
+  return `${side} ${posNames[posIdx]} (#${num})`;
+}
+
+function handleClick(e){
+  if(gs.phase==='idle' || gs.phase==='animating' || gs.phase==='complete') return;
+  const nd = getMouseNDC(e);
+  mouse.set(nd.x,nd.y);
+  raycaster.setFromCamera(mouse,camera);
+  const hits = raycaster.intersectObjects(clickTargets,false);
+  if(hits.length===0) return;
+  const { jaw, idx } = hits[0].object.userData;
+  onToothClick(jaw, Number(idx));
+}
+
+function onToothClick(jaw, idx){
+  if(gs.phase!=='playing') return;
+  const mission = MISSIONS.find(m=>m.id===gs.mission);
+  if(!mission) return;
+  const step = mission.steps[gs.stepIdx];
+  const tgt = mission.target;
+
+  gs.totalAttempts++;
+
+  // Wrong tooth
+  if(jaw!==tgt.jaw || idx!==tgt.idx){
+    showToast('Click on the highlighted target tooth!','err');
+    return;
+  }
+  // Wrong tool
+  if(gs.tool !== step.tool){
+    const needed = TOOLS[step.tool].name;
+    showToast(`Select "${needed}" first!`,'err');
+    shakeStep(gs.stepIdx);
+    return;
+  }
+
+  gs.correctAttempts++;
+  executeStep(mission, gs.stepIdx);
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// MISSION LOGIC
+// ═══════════════════════════════════════════════════════════════════════════════
+function startMission(missionId){
+  if(gs.phase==='animating') return;
+  // reset any previous
+  resetMissionVisuals();
+
+  gs.mission = missionId;
+  gs.stepIdx = 0;
+  gs.phase = 'playing';
+  gs.tool = null;
+  gs.totalAttempts = 0;
+  gs.correctAttempts = 0;
+
+  const mission = MISSIONS.find(m=>m.id===missionId);
+  const { jaw, idx } = mission.target;
+  const key = toothKey(jaw,idx);
+
+  if(missionId==='implant'){
+    // Implant: edentulous ridge — show ghost placeholder tooth for clicking
+    gs.toothStates[key] = { implantSite:true };
+  } else {
+    // Mark tooth as diseased for other missions
+    gs.toothStates[key] = { diseased:true };
+  }
+  rebuildTooth(jaw, idx);
+
+  document.getElementById('idle-overlay').classList.add('hidden');
+  gs.autoSpin = false;
+  updateUI();
+  pulseTarget(true);
+  showToast(`Mission started: ${mission.name}`,'info');
+}
+
+function executeStep(mission, stepIdx){
+  gs.phase = 'animating';
+  const step = mission.steps[stepIdx];
+  const { jaw, idx } = mission.target;
+  const key = toothKey(jaw,idx);
+
+  showToast(`✓ ${step.label}`,'ok');
+
+  // Animate based on action
+  const isLastStep = stepIdx === mission.steps.length-1;
+
+  // Step-specific effects
+  if(step.tool==='forceps' && mission.id==='extraction'){
+    animExtract(jaw,idx,()=>afterStep(mission,stepIdx));
+  } else if(step.tool==='mirror' || step.tool==='retractor'){
+    // Brief glow
+    flashTooth(key, 0x22d3ee, 600, ()=>afterStep(mission,stepIdx));
+  } else if(step.tool==='scalpel'){
+    flashTooth(key, 0xff5566, 500, ()=>afterStep(mission,stepIdx));
+  } else if(step.tool==='curette'){
+    flashTooth(key, 0x88ffcc, 500, ()=>afterStep(mission,stepIdx));
+  } else if(step.tool==='needle'){
+    flashTooth(key, 0xaaccff, 700, ()=>afterStep(mission,stepIdx));
+  } else {
+    setTimeout(()=>afterStep(mission,stepIdx), 500);
+  }
+}
+
+function afterStep(mission, stepIdx){
+  gs.stepIdx = stepIdx+1;
+  const isLast = gs.stepIdx >= mission.steps.length;
+  if(isLast){
+    onMissionComplete(mission);
+  } else {
+    gs.phase = 'playing';
+    pulseTarget(true);
+    updateUI();
+  }
+}
+
+function onMissionComplete(mission){
+  gs.phase = 'complete';
+  const { jaw, idx } = mission.target;
+  const key = toothKey(jaw,idx);
+
+  // Mark tooth as treated after procedure
+  if(mission.id==='extraction'){
+    // already extracted via animation
+  } else if(mission.id==='implant'){
+    gs.toothStates[key] = { treated:true };
+    rebuildTooth(jaw,idx);
+  } else {
+    gs.toothStates[key] = { treated:true };
+    rebuildTooth(jaw,idx);
+  }
+
+  gs.completedMissions.add(mission.id);
+  const acc = gs.totalAttempts>0 ? Math.round(gs.correctAttempts/gs.totalAttempts*100) : 100;
+  const bonus = Math.round(mission.pts * acc/100);
+  gs.score += bonus;
+
+  pulseTarget(false);
+  updateHUDStats();
+
+  setTimeout(()=>{
+    showCompleteModal(mission, acc, bonus);
+    updateUI();
+  }, 400);
+}
+
+function resetMissionVisuals(){
+  if(!gs.mission) return;
+  const mission = MISSIONS.find(m=>m.id===gs.mission);
+  if(!mission) return;
+  pulseTarget(false);
+  const { jaw, idx } = mission.target;
+  const key = toothKey(jaw,idx);
+  const st = gs.toothStates[key] || {};
+  // Always clear state and rebuild for any active-mission tooth
+  if(st.diseased || st.extracted || st.implantSite || st.treated){
+    gs.toothStates[key] = {};
+    rebuildTooth(jaw, idx); // also cleans up socket markers stored in toothObjs[key]
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// ANIMATIONS
+// ═══════════════════════════════════════════════════════════════════════════════
+function animExtract(jaw, idx, cb){
+  const key = toothKey(jaw,idx);
+  const obj = toothObjs[key];
+  if(!obj){ cb(); return; }
+
+  const isUp = jaw==='upper';
+  const dir = isUp ? -1 : 1;
+  const startY = obj.group.position.y;
+  const t0 = performance.now();
+  const dur = 900;
+
+  function tick(){
+    const p = Math.min((performance.now()-t0)/dur, 1);
+    const ease = p<0.5 ? 2*p*p : -1+(4-2*p)*p;
+    obj.group.position.y = startY + dir * ease * 1.4;
+    obj.mat.opacity = 1 - ease;
+    obj.mat.transparent = true;
+    if(p<1){ requestAnimationFrame(tick); }
+    else {
+      // Remove tooth
+      const parent = jaw==='upper' ? upperGroup : lowerGroup;
+      parent.remove(obj.group);
+      obj.group.traverse(o=>{ if(o.geometry)o.geometry.dispose(); });
+      delete toothObjs[key];
+      const ci = clickTargets.indexOf(obj.crownMesh);
+      if(ci>=0) clickTargets.splice(ci,1);
+      gs.toothStates[key] = { extracted:true };
+      addSocketMarker(jaw,idx);
+      cb();
+    }
+  }
+  requestAnimationFrame(tick);
+}
+
+function addSocketMarker(jaw, idx){
+  // Creates a clickable socket placeholder so post-extraction steps still work.
+  // Stored in toothObjs[key] with a MeshStandardMaterial so flashTooth() works normally.
+  const key  = toothKey(jaw, idx);
+  const t    = ARCH_T[idx];
+  const pos  = archXZ(t);
+  const rotY = archRotY(t);
+  const dims = TOOTH_DIMS[TOOTH_TYPES_SEQ[idx]];
+  const isUp = jaw === 'upper';
+
+  const group = new THREE.Group();
+  group.position.set(pos.x, 0, pos.z);
+  group.rotation.y = rotY;
+
+  // Visible dark socket disc
+  const discGeo = new THREE.CylinderGeometry(dims.w * 0.55, dims.w * 0.55, 0.04, 16);
+  const discMat = new THREE.MeshStandardMaterial({
+    color: 0x1a2535, roughness: 0.95, metalness: 0,
+    emissive: new THREE.Color(0, 0, 0), emissiveIntensity: 0,
+  });
+  const disc = new THREE.Mesh(discGeo, discMat);
+  disc.position.y = 0;
+  group.add(disc);
+
+  // Invisible hit-box spanning where the crown used to be — makes clicking easy
+  const hitGeo = new THREE.BoxGeometry(dims.w * 1.6, dims.ch * 1.2, dims.d * 1.6);
+  const hitMat = new THREE.MeshBasicMaterial({ transparent: true, opacity: 0, depthWrite: false });
+  const hitMesh = new THREE.Mesh(hitGeo, hitMat);
+  hitMesh.position.y = isUp ? -dims.ch * 0.5 : dims.ch * 0.5;
+  hitMesh.userData = { tooth: true, jaw, idx, key };
+  group.add(hitMesh);
+
+  const parent = jaw === 'upper' ? upperGroup : lowerGroup;
+  parent.add(group);
+  clickTargets.push(hitMesh);
+
+  // Register in toothObjs so flashTooth / pulseTarget / cleanup all work
+  toothObjs[key] = {
+    group, crownMesh: hitMesh, wireObj: null,
+    mat: discMat, jaw, idx,
+    isSocket: true,
+  };
+}
+
+function flashTooth(key, color, dur, cb){
+  const obj = toothObjs[key];
+  if(!obj){ setTimeout(cb, dur); return; }
+  const t0 = performance.now();
+  obj.mat.emissive.setHex(color);
+  function tick(){
+    const p = Math.min((performance.now()-t0)/dur,1);
+    obj.mat.emissiveIntensity = Math.sin(p*Math.PI)*0.55;
+    if(p<1) requestAnimationFrame(tick);
+    else { obj.mat.emissiveIntensity=0; cb(); }
+  }
+  requestAnimationFrame(tick);
+}
+
+// Pulsing glow for target tooth
+let pulseAnim = null;
+function pulseTarget(on){
+  if(pulseAnim){ cancelAnimationFrame(pulseAnim); pulseAnim=null; }
+  if(!on || !gs.mission) return;
+  const mission = MISSIONS.find(m=>m.id===gs.mission);
+  if(!mission) return;
+  const { jaw, idx } = mission.target;
+  const key = toothKey(jaw,idx);
+  const obj = toothObjs[key];
+  if(!obj) return;
+  obj.mat.emissive.setHex(0xff4400);
+  let t0 = performance.now();
+  function tick(){
+    const t = (performance.now()-t0)/1000;
+    obj.mat.emissiveIntensity = 0.2 + 0.18*Math.sin(t*3.5);
+    pulseAnim = requestAnimationFrame(tick);
+  }
+  tick();
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// RENDER LOOP
+// ═══════════════════════════════════════════════════════════════════════════════
+function renderLoop(){
+  animId = requestAnimationFrame(renderLoop);
+  if(!scene || !renderer) return;
+  if(!drag && gs.autoSpin) orbit.theta += 0.004;
+  camera.position.copy(getCameraPos());
+  camera.lookAt(orbit.px, orbit.py, 0);
+  renderer.render(scene, camera);
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// UI — TOOLS
+// ═══════════════════════════════════════════════════════════════════════════════
+function renderTools(){
+  const list = document.getElementById('tools-list');
+  let html = '';
+  for(const id of TOOL_ORDER){
+    const t = TOOLS[id];
+    const active = gs.tool===id;
+    html += `<button class="tool-btn${active?' active':''}" data-tool="${id}">
+      <div class="tool-icon">${t.icon}</div>
+      <div class="tool-info">
+        <div class="tool-name">${t.name}</div>
+        <div class="tool-desc">${t.desc}</div>
+      </div>
+    </button>`;
+  }
+  // Hint for current step
+  if(gs.phase==='playing' && gs.mission){
+    const m = MISSIONS.find(x=>x.id===gs.mission);
+    if(m && m.steps[gs.stepIdx]){
+      const nt = m.steps[gs.stepIdx].tool;
+      html += `<div class="tool-hint">&#9888; Use <strong>${TOOLS[nt].name}</strong> for this step</div>`;
+    }
+  }
+  list.innerHTML = html;
+  list.querySelectorAll('.tool-btn').forEach(btn=>{
+    btn.addEventListener('click',()=>{
+      gs.tool = btn.dataset.tool;
+      document.getElementById('hud-tool-cur').textContent = TOOLS[gs.tool].name;
+      renderTools();
+    });
+  });
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// UI — MISSION PANEL
+// ═══════════════════════════════════════════════════════════════════════════════
+function renderMissionPanel(){
+  const active = document.getElementById('mission-active');
+  if(!gs.mission){
+    active.innerHTML = '<div style="text-align:center;padding:20px 0;color:var(--muted);font-size:12px">No active mission.<br>Select one below.</div>';
+  } else {
+    const m = MISSIONS.find(x=>x.id===gs.mission);
+    const total = m.steps.length;
+    const done = gs.phase==='complete' ? total : gs.stepIdx;
+    const pct = Math.round(done/total*100);
+    const diffClass = m.diff==='easy'?'diff-easy':m.diff==='med'?'diff-med':'diff-hard';
+    const diffLabel = m.diff==='easy'?'Beginner':m.diff==='med'?'Intermediate':'Advanced';
+
+    let stepsHtml = '';
+    m.steps.forEach((s,i)=>{
+      const cls = i<done?'done':i===done?'active':'pending';
+      const num = i<done?'✓':(i===done?'►':(i+1));
+      stepsHtml += `<div class="step-item ${cls}" id="step-${i}">
+        <div class="step-num">${num}</div>
+        <div class="step-body">
+          <div class="step-label">${s.label}</div>
+          <div class="step-tool">${TOOLS[s.tool].icon} ${TOOLS[s.tool].name}</div>
+          ${cls==='active'?`<div class="step-desc">${s.desc}</div>`:''}
+        </div>
+      </div>`;
+    });
+
+    active.innerHTML = `
+      <div class="mission-header">
+        <div class="m-diff ${diffClass}">${diffLabel}</div>
+        <div class="m-name">${m.icon} ${m.name}</div>
+        <div class="m-sub">${m.desc}</div>
+      </div>
+      <div class="mission-target">
+        <div class="lbl">Target Tooth</div>
+        <div class="val">${m.target.label}</div>
+        <div class="cond">⚠ ${m.condition}</div>
+      </div>
+      <div class="steps-label">Procedure Steps (${done}/${total})</div>
+      ${stepsHtml}
+      <div class="mission-progress"><div class="mission-progress-fill" style="width:${pct}%"></div></div>
+      <div class="mission-score">Reward: ${m.pts} pts (accuracy bonus)</div>
+    `;
+  }
+
+  // Mission selector
+  const list = document.getElementById('mission-list');
+  let html = '';
+  for(const m of MISSIONS){
+    const isDone = gs.completedMissions.has(m.id);
+    const isActive = gs.mission===m.id;
+    const diffClass = m.diff==='easy'?'diff-easy':m.diff==='med'?'diff-med':'diff-hard';
+    const diffLabel = m.diff==='easy'?'Beginner':m.diff==='med'?'Intermediate':'Advanced';
+    html += `<div class="mission-card${isActive?' active':''}${isDone?' done':''}" data-mission="${m.id}">
+      <div class="mc-icon">${m.icon}</div>
+      <div class="mc-info">
+        <div class="mc-name">${m.name}</div>
+        <div class="mc-sub">${diffLabel} · ${m.pts} pts</div>
+      </div>
+      <div class="mc-badge">${isDone?'✓ Done':isActive?'Active':'—'}</div>
+    </div>`;
+  }
+  list.innerHTML = html;
+  list.querySelectorAll('.mission-card').forEach(card=>{
+    card.addEventListener('click',()=>{
+      if(gs.phase==='animating') return;
+      startMission(card.dataset.mission);
+    });
+  });
+}
+
+function updateUI(){
+  renderTools();
+  renderMissionPanel();
+  updateHUDStats();
+  updateStatusPill();
+}
+
+function updateHUDStats(){
+  document.getElementById('hud-score').textContent = gs.score;
+  if(gs.totalAttempts>0){
+    const acc = Math.round(gs.correctAttempts/gs.totalAttempts*100);
+    document.getElementById('hud-acc').textContent = acc+'%';
+  }
+  document.getElementById('hud-done').textContent = gs.completedMissions.size+'/6';
+}
+
+function updateStatusPill(){
+  const pill = document.getElementById('status-pill');
+  pill.className='';
+  if(gs.phase==='idle'){
+    pill.className='idle'; pill.textContent='Select a mission to begin';
+  } else if(gs.phase==='playing'){
+    const m=MISSIONS.find(x=>x.id===gs.mission);
+    const s=m.steps[gs.stepIdx];
+    pill.className=''; pill.textContent=`Step ${gs.stepIdx+1}/${m.steps.length}: ${s.label}`;
+  } else if(gs.phase==='animating'){
+    pill.className=''; pill.textContent='Performing procedure…';
+  } else if(gs.phase==='complete'){
+    pill.className='success'; pill.textContent='Mission Complete!';
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// UI — FEEDBACK
+// ═══════════════════════════════════════════════════════════════════════════════
+let toastTimer=null;
+function showToast(msg, type='info'){
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = `show ${type}`;
+  if(toastTimer) clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=>{ el.className=''; }, type==='ok'?2000:2800);
+}
+
+function shakeStep(idx){
+  const el = document.getElementById(`step-${idx}`);
+  if(!el) return;
+  el.style.animation='shake .4s ease';
+  el.style.borderColor='rgba(244,63,94,.5)';
+  setTimeout(()=>{ el.style.animation=''; el.style.borderColor=''; },500);
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// UI — MISSION COMPLETE MODAL
+// ═══════════════════════════════════════════════════════════════════════════════
+function showCompleteModal(mission, acc, bonus){
+  document.getElementById('complete-subtitle').textContent = `${mission.name} performed successfully`;
+  document.getElementById('complete-body').innerHTML = `
+    <div class="score-row"><span class="sr-lbl">Mission Points</span><span class="sr-val">${mission.pts} pts</span></div>
+    <div class="score-row"><span class="sr-lbl">Accuracy</span><span class="sr-val">${acc}%</span></div>
+    <div class="score-row"><span class="sr-lbl">Earned</span><span class="sr-val green">+${bonus} pts</span></div>
+    <div class="score-row"><span class="sr-lbl">Total Score</span><span class="sr-val green">${gs.score} pts</span></div>
+    <div class="score-row"><span class="sr-lbl">Missions Completed</span><span class="sr-val">${gs.completedMissions.size}/6</span></div>
+  `;
+  document.getElementById('complete-overlay').classList.remove('hidden');
+}
+
+document.getElementById('complete-retry').addEventListener('click',()=>{
+  document.getElementById('complete-overlay').classList.add('hidden');
+  if(gs.mission) startMission(gs.mission);
+});
+document.getElementById('complete-next').addEventListener('click',()=>{
+  document.getElementById('complete-overlay').classList.add('hidden');
+  // Find next uncompleted
+  const next = MISSIONS.find(m=>!gs.completedMissions.has(m.id));
+  if(next) startMission(next.id);
+  else{ gs.phase='idle'; gs.mission=null; updateUI(); document.getElementById('idle-overlay').classList.remove('hidden'); }
+});
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// TOOLBAR BUTTONS
+// ═══════════════════════════════════════════════════════════════════════════════
+document.getElementById('spin-btn').addEventListener('click',()=>{
+  gs.autoSpin = !gs.autoSpin;
+  document.getElementById('spin-btn').innerHTML = gs.autoSpin ? '&#x23F8;' : '&#x25BA;';
+});
+document.getElementById('reset-cam-btn').addEventListener('click',()=>{
+  orbit.theta=0.15; orbit.phi=1.05; orbit.r=6.2; orbit.px=0; orbit.py=0.1;
+});
+
+const THEME_KEY = 'durian-dental-theme';
+let _currentTheme = localStorage.getItem(THEME_KEY) || 'dark';
+
+function applyTheme(theme){
+  _currentTheme = theme;
+  document.documentElement.dataset.theme = theme;
+  document.getElementById('theme-btn').innerHTML = theme==='light' ? '&#9798;' : '&#9788;';
+  // Apply 3D scene colors only after renderer/scene exist
+  if (typeof renderer !== 'undefined' && renderer && scene) {
+    const bg = theme==='light' ? 0xf4f1e8 : 0x05070b;
+    renderer.setClearColor(bg, 1);
+    scene.background = new THREE.Color(bg);
+    if (scene.fog) scene.fog.color = new THREE.Color(bg);
+  }
+}
+applyTheme(_currentTheme);
+
+document.getElementById('theme-btn').addEventListener('click', () => {
+  const next = _currentTheme === 'light' ? 'dark' : 'light';
+  localStorage.setItem(THEME_KEY, next);
+  applyTheme(next);
+});
+
+document.getElementById('wire-btn').addEventListener('click',function(){
+  gs.showWire = !gs.showWire;
+  this.classList.toggle('active', gs.showWire);
+  Object.values(toothObjs).forEach(o=>{ if(o.wireObj) o.wireObj.visible = gs.showWire; });
+});
+
+document.getElementById('xray-btn').addEventListener('click',function(){
+  gs.showXRay = !gs.showXRay;
+  this.classList.toggle('active', gs.showXRay);
+  const op = gs.showXRay ? 0.22 : 1;
+  const tr = gs.showXRay;
+  Object.values(toothObjs).forEach(o=>{
+    o.mat.transparent = tr; o.mat.opacity = op;
+  });
+  if(palate){ palate.material.opacity = op; palate.material.transparent = tr; }
+  if(tongue){ tongue.material.opacity = op; tongue.material.transparent = tr; }
+  Object.values(gumObjs).forEach(g=>{ if(g){ g.material.opacity=op; g.material.transparent=tr; } });
+  Object.values(boneObjs).forEach(b=>{ if(b){ b.material.opacity=op; b.material.transparent=tr; } });
+});
+
+// View mode buttons
+function setViewMode(mode){
+  gs.viewMode = mode;
+  upperGroup.visible = mode!=='lower';
+  lowerGroup.visible = mode!=='upper';
+  document.getElementById('view-both-btn').classList.toggle('active', mode==='both');
+  document.getElementById('view-upper-btn').classList.toggle('active', mode==='upper');
+  document.getElementById('view-lower-btn').classList.toggle('active', mode==='lower');
+  document.getElementById('hud-view').textContent = mode==='both'?'Full Arch · 3D':mode==='upper'?'Upper Jaw · 3D':'Lower Jaw · 3D';
+}
+document.getElementById('view-both-btn').addEventListener('click',()=>setViewMode('both'));
+document.getElementById('view-upper-btn').addEventListener('click',()=>setViewMode('upper'));
+document.getElementById('view-lower-btn').addEventListener('click',()=>setViewMode('lower'));
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════════════════════════════════
+function init(){
+  initRenderer();
+  buildScene();
+  updateUI();
+}
+init();
+</script>
+</body>
+</html>
