@@ -87,3 +87,17 @@ Successful completion of a surgical mission follows a precise loop:
 -   **Deployment**: Single-file HTML (Zero dependencies required beyond CDN)
 
 ## 🦷 MCP (please refer to the content inside the folder)
+- **📚 Medical Literature**:
+  - `search-medical-literature`: Query PubMed for research articles.
+  - `get-article-details`: Retrieve detailed abstracts and metadata via PMID.
+  - `search-google-scholar`: Access academic research via Google Scholar.
+  - `search-medical-journals`: Focused searches in high-impact journals (NEJM, JAMA, etc.).
+- **🌍 Global Health & Pediatrics**:
+  - `get-health-statistics`: Access WHO Global Health Observatory data.
+  - `get-child-health-statistics`: WHO indicators specifically for pediatric populations.
+  - `search-pediatric-guidelines`: Access AAP (Bright Futures) and policy statements.
+- **🔍 Multi-Database Search**:
+  - `search-medical-databases`: An aggregate tool searching PubMed, Scholar, Cochrane, and ClinicalTrials.gov simultaneously.
+- **📊 System Monitoring**:
+  - `get-cache-stats`: Monitor server performance (hit rates, memory usage).
+- etc.
