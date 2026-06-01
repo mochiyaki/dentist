@@ -4,9 +4,9 @@ Model Context Protocol (MCP) server that provides comprehensive medical informat
 
 ## 🚀 Overview
 
-`medical-mcp` is a specialized MCP server designed to bridge the gap between LLMs (like Claude) and highly reliable medical databases. It provides structured, real-time access to critical healthcare information, including drug databases, medical literature, and global health statistics.
+`medical-mcp` is a specialized MCP server designed to bridge the gap between LLMs and highly reliable medical databases. It provides structured, real-time access to critical healthcare information, including drug databases, medical literature, and global health statistics.
 
-The server supports both **stdio** (for local IDE integration like Claude Desktop/Cursor) and **HTTP** (for remote or web-based usage) transports.
+The server supports both **stdio** (for local CLI/IDE integration) and **HTTP** (for remote or web-based usage) transports.
 
 ## 🛠 Architecture
 
@@ -106,7 +106,7 @@ The server exposes several powerful tools to the MCP client:
 ### Running the Server
 
 #### 1. Stdio Mode (Default)
-Used for local integration with Claude Desktop or Cursor.
+Used for local integration with any agent, i.e., durian
 ```bash
 npm run start
 ```
@@ -122,6 +122,9 @@ Run the full test suite using Jest:
 ```bash
 npm test
 ```
+
+## Reference
+https://github.com/JamesANZ/medical-mcp
 
 ## ⚠️ Safety & Disclaimer
 
