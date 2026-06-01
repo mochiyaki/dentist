@@ -1,4 +1,4 @@
-# 🦷 Dentist
+# 🦷 Simulator
 
 A high-fidelity, interactive 3D dental surgical simulation experience built entirely within a single dashboard. This simulator provides a procedure-based learning environment for dental professionals to practice surgical techniques like extractions, implants, and root canals in a controlled, risk-free virtual space.
 
