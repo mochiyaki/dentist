@@ -60,7 +60,7 @@ Successful completion of a surgical mission follows a precise loop:
 
 1.  **Initiation**: User selects a mission from the **Mission Control** panel (e.g., "Tooth Extraction").
 2.  **Diagnosis**: The viewport highlights the target tooth. The user inspects the area using the **Dental Mirror**.
-3.  **Instrumentation**: The user selects the required tool from the **Surgical Tools** list (e.					  e.g., **Retractor**, then **Elevator**).
+3.  **Instrumentation**: The user selects the required tool from the **Surgical Tools** list (e.g., **Retractor**, then **Elevator**).
 4.  **Execution**:
     - User clicks the target tooth with the active tool.
     - The system validates if the tool matches the current procedure step.
@@ -82,9 +82,8 @@ Successful completion of a surgical mission follows a precise loop:
 ## 🛠️ Technical Stack
 
 -   **Language**: JavaScript (ES6+)
--   **3D Engine**: [Three.js](https://threejs.org/)
 -   **Styling**: CSS3 (Modern Flexbox/Grid, CSS Variables)
--   **Deployment**: Single-file HTML (Zero dependencies required beyond CDN)
+-   **Deployment**: HTML (Zero dependencies required beyond CDN)
 
 ## 🤖 MCP (please refer to the content inside the folder)
 - **📚 Medical Literature**:
